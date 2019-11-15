@@ -116,6 +116,11 @@ func setFieldValue(dest reflect.Value, src interface{}, ctype *sql.ColumnType) e
 		// thus if it's a pointer we are supposed to dereference it once
 		dest = dest.Elem()
 	}
+	srcVal := reflect.ValueOf(src)
+	if srcVal.Kind() == reflect.Ptr {
+		srcVal = srcVal.Elem()
+		src = srcVal.Interface()
+	}
 
 	success := false
 	switch s := src.(type) {
@@ -178,7 +183,7 @@ func encodeFromRow(s *selectedTable, row []interface{}, offset int, t interface{
 
 	for i, f := range s.modelFields {
 		colTyp := cols[offset+i]
-		rowVal := *(row[offset+i].(*interface{}))
+		rowVal := row[offset+i]
 		elem := tv.Elem().FieldByIndex(f.StructFieldPath)
 
 		err := setFieldValue(elem, rowVal, colTyp)
