@@ -25,14 +25,10 @@ func doSelect(calldepth int, q DBTX, i interface{}) error {
 	}
 
 	selects := builder.Eq{}
-	for _, f := range model.Fields {
-		if f.IsPrimary {
-			val := v.FieldByIndex(f.StructFieldPath)
-			if reflect.Zero(val.Type()).Interface() != val.Interface() {
-				fieldName := fmt.Sprintf("[!%s.%s]", model.ModelName, f.Name)
-				selects[fieldName] = val.Interface()
-			}
-		}
+	for _, f := range model.PrimaryFields {
+		val := v.FieldByIndex(f.StructFieldPath)
+		fieldName := fmt.Sprintf("[!%s.%s]", model.ModelName, f.Name)
+		selects[fieldName] = val.Interface()
 	}
 
 	qs, err := doQuery(calldepth+1, q, b.From("["+model.ModelName+"]").Where(selects), model.ModelName)
