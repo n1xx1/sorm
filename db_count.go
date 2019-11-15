@@ -1,4 +1,4 @@
-package db
+package sorm
 
 import (
 	"github.com/n1xx1/builder"

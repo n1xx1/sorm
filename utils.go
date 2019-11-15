@@ -1,4 +1,4 @@
-package db
+package sorm
 
 import (
 	"database/sql"
