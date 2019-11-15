@@ -3,6 +3,7 @@ package sorm
 import (
 	"database/sql"
 	"fmt"
+	"github.com/go-sql-driver/mysql"
 	"reflect"
 	"strconv"
 	"time"
@@ -118,8 +119,12 @@ func setFieldValue(dest reflect.Value, src interface{}, ctype *sql.ColumnType) e
 	}
 	srcVal := reflect.ValueOf(src)
 	if srcVal.Kind() == reflect.Ptr {
-		srcVal = srcVal.Elem()
-		src = srcVal.Interface()
+		if !srcVal.IsNil() {
+			srcVal = srcVal.Elem()
+			src = srcVal.Interface()
+		} else {
+			src = nil
+		}
 	}
 
 	success := false
@@ -142,6 +147,12 @@ func setFieldValue(dest reflect.Value, src interface{}, ctype *sql.ColumnType) e
 			dest.SetString(s)
 			success = true
 		}
+	case sql.RawBytes:
+		dest = createStorage(dest)
+		if dest.Kind() == reflect.String {
+			dest.SetString(string(s))
+			success = true
+		}
 	case []uint8:
 		dest = createStorage(dest)
 		if dest.Kind() == reflect.String {
@@ -155,6 +166,8 @@ func setFieldValue(dest reflect.Value, src interface{}, ctype *sql.ColumnType) e
 				success = true
 			}
 		}
+	case bool:
+		success = convertBool(dest, s)
 	case time.Time:
 		dest = createStorage(dest)
 		v := reflect.ValueOf(s)
@@ -162,8 +175,26 @@ func setFieldValue(dest reflect.Value, src interface{}, ctype *sql.ColumnType) e
 			dest.Set(v)
 			success = true
 		}
-	case bool:
-		success = convertBool(dest, s)
+	case mysql.NullTime:
+		dest = createStorage(dest)
+		if dest.Type() == reflect.TypeOf(s.Time) {
+			if !s.Valid {
+				dest.Set(reflect.Zero(dest.Type()))
+			} else {
+				dest.Set(reflect.ValueOf(s.Time))
+			}
+			success = true
+		}
+	case sql.NullTime:
+		dest = createStorage(dest)
+		if dest.Type() == reflect.TypeOf(s.Time) {
+			if !s.Valid {
+				dest.Set(reflect.Zero(dest.Type()))
+			} else {
+				dest.Set(reflect.ValueOf(s.Time))
+			}
+			success = true
+		}
 	default:
 		_ = s
 	}

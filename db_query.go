@@ -341,7 +341,8 @@ func doQuery(calldepth int, q DBTX, b *builder.Builder, selectParams ...interfac
 	}
 	dest := make([]interface{}, len(rowCols))
 	for i, col := range rowCols {
-		dest[i] = reflect.New(col.ScanType()).Interface()
+		scanType := col.ScanType()
+		dest[i] = reflect.New(scanType).Interface()
 	}
 
 	return &QueryScanner{selects: selects, dest: dest, offsets: offsets, rows: rows, cols: rowCols}, nil
