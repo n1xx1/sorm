@@ -40,52 +40,52 @@ func parseMacroArguments(texts string) (int, []string) {
 	return 0, nil
 }
 
-func macroFuncIf(args []string, mssql bool) (string, error) {
+func macroFuncIf(args []string, driver Driver) (string, error) {
 	if len(args) != 3 {
 		return "", fmt.Errorf("wrong argument count for IF! (expected 3, got %d instead)", len(args))
 	}
 	return fmt.Sprintf("CASE WHEN %s THEN %s ELSE %s END", args[0], args[1], args[2]), nil
 }
-func macroFuncGt0(args []string, mssql bool) (string, error) {
+func macroFuncGt0(args []string, driver Driver) (string, error) {
 	if len(args) != 2 {
 		return "", fmt.Errorf("wrong argument count for GT0! (expected 2, got %d instead)", len(args))
 	}
 	return fmt.Sprintf("CASE WHEN %s > 0 THEN %s ELSE %s END", args[0], args[0], args[1]), nil
 }
-func macroFuncMin(args []string, mssql bool) (string, error) {
+func macroFuncMin(args []string, driver Driver) (string, error) {
 	if len(args) < 2 {
 		return "", fmt.Errorf("wrong argument count for MIN! (expected 2 or more, got %d instead)", len(args))
 	}
-	if mssql {
+	if driver == DriverMssql {
 		values := "(" + strings.Join(args, "),(") + ")"
 		return fmt.Sprintf("(SELECT MIN(i) FROM (VALUES %s) AS T(i))", values), nil
 	}
 	values := strings.Join(args, ",")
 	return fmt.Sprintf("LEAST(%s)", values), nil
 }
-func macroFuncMax(args []string, mssql bool) (string, error) {
+func macroFuncMax(args []string, driver Driver) (string, error) {
 	if len(args) < 2 {
 		return "", fmt.Errorf("wrong argument count for MAX! (expected 2 or more, got %d instead)", len(args))
 	}
-	if mssql {
+	if driver == DriverMssql {
 		values := "(" + strings.Join(args, "),(") + ")"
 		return fmt.Sprintf("(SELECT MAX(i) FROM (VALUES %s) AS T(i))", values), nil
 	}
 	values := "SELECT " + args[0] + " AS i UNION SELECT " + strings.Join(args[1:], " UNION SELECT ")
 	return fmt.Sprintf("(SELECT MAX(v.i) FROM (%s) v)", values), nil
 }
-func macroFuncAddMonths(args []string, mssql bool) (string, error) {
+func macroFuncAddMonths(args []string, driver Driver) (string, error) {
 	if len(args) != 2 {
 		return "", fmt.Errorf("wrong argument count for ADDMONTH! (expected 2, got %d instead)", len(args))
 	}
-	if mssql {
+	if driver == DriverMssql {
 		return fmt.Sprintf("DATEADD(month, %s, %s)", args[1], args[0]), nil
 	} else {
 		return fmt.Sprintf("DATE_ADD(%s, INTERVAL %s MONTH)", args[0], args[1]), nil
 	}
 }
 
-type MacroFunc func(args []string, mssql bool) (string, error)
+type MacroFunc func(args []string, driver Driver) (string, error)
 
 var macroFuncs = map[string]MacroFunc{
 	"IF":       macroFuncIf,
@@ -111,7 +111,7 @@ func init() {
 /// PerformQueryMacro transforms some macro in the input
 ///   IF!(a, b, c)  --> CASE WHEN a THEN b ELSE c END,
 ///   GT0!(a, b)    --> IF!(a > 0, a, b)
-func PerformQueryMacro(input string, isMssql bool) (string, error) {
+func PerformQueryMacro(input string, driver Driver) (string, error) {
 	for {
 		indexes := regexMacro.FindStringSubmatchIndex(input)
 		if indexes != nil {
@@ -125,7 +125,7 @@ func PerformQueryMacro(input string, isMssql bool) (string, error) {
 			macro := input[indexes[2]:indexes[3]]
 
 			if fn, ok := macroFuncs[macro]; ok {
-				repl, err = fn(args, isMssql)
+				repl, err = fn(args, driver)
 				if err != nil {
 					return "", err
 				}

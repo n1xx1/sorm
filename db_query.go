@@ -296,8 +296,6 @@ func (q *QueryScanner) Close() error {
 }
 
 func doQuery(calldepth int, q DBTX, b *builder.Builder, selectParams ...interface{}) (*QueryScanner, error) {
-	isMssql := q.Driver() == "mssql"
-
 	var selects []*selectedTable
 	var offsets []int
 
@@ -329,8 +327,8 @@ func doQuery(calldepth int, q DBTX, b *builder.Builder, selectParams ...interfac
 		return nil, fmt.Errorf("sql builder error: %w", err)
 	}
 
-	sql1 = FormatQuery(isMssql, sql1)
-	sql1, args = ConvertQuery(isMssql, sql1, args)
+	sql1 = FormatQuery(q.Driver(), sql1)
+	sql1, args = ConvertQuery(q.Driver(), sql1, args)
 
 	rows, err := timedQuery(q, sql1, args, calldepth)
 	if err != nil {

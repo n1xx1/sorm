@@ -7,10 +7,8 @@ import (
 )
 
 func doInsert(calldepth int, q DBTX, i interface{}) error {
-	isMssql := q.Driver() == "mssql"
-
 	var b *builder.Builder
-	if isMssql {
+	if q.Driver() == DriverMssql {
 		b = builder.MsSQL()
 	} else {
 		b = builder.MySQL()
@@ -39,11 +37,11 @@ func doInsert(calldepth int, q DBTX, i interface{}) error {
 		return fmt.Errorf("sql builder: %w", err)
 	}
 
-	sql1 = FormatQuery(isMssql, sql1)
-	sql1, args = ConvertQuery(isMssql, sql1, args)
+	sql1 = FormatQuery(q.Driver(), sql1)
+	sql1, args = ConvertQuery(q.Driver(), sql1, args)
 
 	var id int64
-	if isMssql {
+	if q.Driver() == DriverMssql {
 		sql1 += "; SELECT ID = CONVERT(BIGINT, SCOPE_IDENTITY())"
 
 		rows, err := timedQuery(q, sql1, args, calldepth)

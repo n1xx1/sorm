@@ -7,10 +7,8 @@ import (
 )
 
 func doSelect(calldepth int, q DBTX, i interface{}) error {
-	isMssql := q.Driver() == "mssql"
-
 	var b *builder.Builder
-	if isMssql {
+	if q.Driver() == DriverMssql {
 		b = builder.MsSQL()
 	} else {
 		b = builder.MySQL()

@@ -6,8 +6,8 @@ import (
 	"strconv"
 )
 
-func SqlEscape(mssql bool, table string) string {
-	if mssql {
+func SqlEscape(driver Driver, table string) string {
+	if driver == DriverMssql {
 		return "[" + table + "]"
 	}
 	return "`" + table + "`"
@@ -17,8 +17,8 @@ var regexField = regexp.MustCompile(`\[(!?)([a-zA-Z_][a-zA-Z0-9_]*)(?:\.([a-zA-Z
 var regexParam = regexp.MustCompile(`\?`)
 var regexParamMs = regexp.MustCompile(`@p(\d+)`)
 
-func ConvertQuery(isMssql bool, query string, args []interface{}) (string, []interface{}) {
-	if isMssql {
+func ConvertQuery(driver Driver, query string, args []interface{}) (string, []interface{}) {
+	if driver == DriverMssql {
 		return query, args
 	}
 	realArgs := make([]interface{}, 0, len(args))
@@ -30,14 +30,14 @@ func ConvertQuery(isMssql bool, query string, args []interface{}) (string, []int
 	return query, realArgs
 }
 
-func FormatQuery(isMssql bool, query string) string {
+func FormatQuery(driver Driver, query string) string {
 	i := 0
 	query = ReplaceAllStringSubmatchFunc(regexParam, query, func(groups []string) string {
 		i++
 		return fmt.Sprintf("@p%d", i)
 	})
 
-	query, err := PerformQueryMacro(query, isMssql)
+	query, err := PerformQueryMacro(query, driver)
 	if err != nil {
 		panic(err)
 	}
@@ -45,11 +45,11 @@ func FormatQuery(isMssql bool, query string) string {
 		if m, ok := modelNameCache[groups[2]]; ok {
 			if groups[3] != "" {
 				if groups[1] == "!" {
-					return SqlEscape(isMssql, m.TableName) + "." + fieldName(isMssql, m, groups[3])
+					return SqlEscape(driver, m.TableName) + "." + fieldName(driver, m, groups[3])
 				}
-				return fieldName(isMssql, m, groups[3])
+				return fieldName(driver, m, groups[3])
 			} else {
-				return SqlEscape(isMssql, m.TableName)
+				return SqlEscape(driver, m.TableName)
 			}
 		}
 		return groups[0]
@@ -58,9 +58,9 @@ func FormatQuery(isMssql bool, query string) string {
 	return query
 }
 
-func fieldName(mssql bool, model *ModelInfo, field string) string {
+func fieldName(driver Driver, model *ModelInfo, field string) string {
 	if f, ok := model.fieldNameMap[field]; ok {
-		return SqlEscape(mssql, f.DbName)
+		return SqlEscape(driver, f.DbName)
 	}
 	return field
 }

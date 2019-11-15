@@ -7,10 +7,8 @@ import (
 )
 
 func doUpdate(calldepth int, q DBTX, i interface{}, otherValues ...builder.Eq) error {
-	isMssql := q.Driver() == "mssql"
-
 	var b *builder.Builder
-	if isMssql {
+	if q.Driver() == DriverMssql {
 		b = builder.MsSQL()
 	} else {
 		b = builder.MySQL()
@@ -46,8 +44,8 @@ func doUpdate(calldepth int, q DBTX, i interface{}, otherValues ...builder.Eq) e
 		return fmt.Errorf("sql builder error: %w", err)
 	}
 
-	sql1 = FormatQuery(isMssql, sql1)
-	sql1, args = ConvertQuery(isMssql, sql1, args)
+	sql1 = FormatQuery(q.Driver(), sql1)
+	sql1, args = ConvertQuery(q.Driver(), sql1, args)
 
 	_, err = timedExec(q, sql1, args, calldepth)
 	if err != nil {
