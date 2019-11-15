@@ -20,6 +20,10 @@ func doSelect(calldepth int, q DBTX, i interface{}) error {
 	}
 
 	model := modelCache[v.Type()]
+	if model == nil {
+		panic("model not found")
+	}
+
 	selects := builder.Eq{}
 	for _, f := range model.Fields {
 		if f.IsPrimary {

@@ -20,6 +20,10 @@ func doUpdate(calldepth int, q DBTX, i interface{}, otherValues ...builder.Eq) e
 	}
 
 	model := modelCache[v.Type()]
+	if model == nil {
+		panic("model not found")
+	}
+
 	selects := builder.Eq{}
 	values := builder.Eq{}
 	for _, f := range model.Fields {

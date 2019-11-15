@@ -169,7 +169,7 @@ func cacheColumns(columns []*sql.ColumnType, typ reflect.Type, indexes [][]int, 
 		if ok {
 			indexes[i] = f.Index
 		}
-		dest[i] = new(interface{})
+		dest[i] = reflect.New(col.ScanType()).Interface()
 	}
 }
 

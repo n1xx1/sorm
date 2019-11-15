@@ -20,6 +20,10 @@ func doInsert(calldepth int, q DBTX, i interface{}) error {
 	}
 
 	model := modelCache[v.Type()]
+	if model == nil {
+		panic("model not found")
+	}
+
 	values := builder.Eq{}
 	for _, f := range model.Fields {
 		if f.IsAutoIncrement {
